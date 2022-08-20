@@ -8,12 +8,12 @@ local setting_lspconfig = settings.lspconfigs
 local filetypes = setting_lspconfig.filetypes
 local features = setting_lspconfig.features
 
-for _, filetype in pairs(filetypes) do
+for _, filetype in ipairs(filetypes) do
     local language = setting_lanuages[filetype]
     lspconfig[language.lsp_server].setup(language.lsp)
 end
 
-for _, feature in pairs(features) do
+for _, feature in ipairs(features) do
     local lsp = setting_lsps[feature]
     lspconfig[lsp.lsp_server].setup(lsp.lsp)
 end

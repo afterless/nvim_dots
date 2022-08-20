@@ -8,7 +8,7 @@ local M = {
 
 function M.bufdelete()
     if bo.modified then
-        cmd('write')
+        cmd("write")
     end
 
     local bufnr = api.nvim_get_current_buf()
@@ -17,13 +17,19 @@ function M.bufdelete()
         return bo[buf].buflisted and api.nvim_buf_is_valid(buf)
     end, api.nvim_list_bufs())
 
-    if bufnr ~= buffers[#buffers] then
-        cmd('bnext')
-    else
-        cmd('bprevious')
-    end
+    if #buffers == 1 then
+        cmd("silent! ScrollViewDisable | bd " .. bufnr .. " | silent! ScrollViewEnable")
 
-    cmd('silent! ScrollViewDisable | bd ' .. bufnr .. ' | silent! ScrollViewEnable')
+        require("dashboard").instance(true)
+    else
+        if bufnr ~= buffers[#buffers] then
+            cmd("bnext")
+        else
+            cmd("bprevious")
+        end
+
+        cmd("silent! ScrollViewDisable | bd " .. bufnr .. " | silent! ScrollViewEnable")
+    end
 end
 
 -- Count number of properties in table
@@ -41,33 +47,36 @@ end
 
 function M.file_extension(filename)
     local t = {}
-    for str in string.gmatch(filename, '([^%.]+)') do
+    for str in string.gmatch(filename, "([^%.]+)") do
         table.insert(t, str)
     end
 
-    if #t == 1 or t[1] == '' then
-        return ''
+    if #t == 1 or t[1] == "" then
+        return ""
     end
 
     return t[#t]
 end
 
 function M.git_hover()
-    local path = vim.fn.expand('%:h')
+    local path = vim.fn.expand("%:h")
 
-    if path == '' or path == '.git' then
+    if path == "" or path == ".git" then
         return
     end
 
-    local blame = require('git_utils').blame(vim.fn.expand('%:p'), vim.api.nvim_win_get_cursor(0)[1])
+    local blame = require("git_utils").blame(vim.fn.expand("%:p"), vim.api.nvim_win_get_cursor(0)[1])
+    if M.tablelength(blame) == 0 then
+        return
+    end
 
-    local texts = { 'Author: ' .. blame.author, '' }
+    local texts = { "Author: " .. blame.author, "" }
 
     local message = blame.message
     local count_line = 0
-    for line in string.gmatch(message, '([^\n]*)(\n?)') do
+    for line in string.gmatch(message, "([^\n]*)(\n?)") do
         if count_line == 0 then
-            table.insert(texts, 'Summary: ' .. line)
+            table.insert(texts, "Summary: " .. line)
             count_line = count_line + 1
         else
             table.insert(texts, line)
@@ -84,34 +93,35 @@ function M.git_hover()
     local buf = api.nvim_create_buf(false, true)
 
     local opts = {
-        relative = 'cursor',
+        relative = "cursor",
         width = width,
         height = height,
         col = 0,
         row = 1,
-        anchor = 'NW',
-        style = 'minimal',
+        anchor = "NW",
+        border = "single",
+        style = "minimal",
     }
 
     api.nvim_open_win(buf, 1, opts)
 
     api.nvim_buf_set_lines(buf, 0, #texts, false, texts)
 
-    api.nvim_buf_set_keymap(buf, 'n', 'q', ':close<CR>', { silent = true, nowait = true, noremap = true })
+    api.nvim_buf_set_keymap(buf, "n", "<Leader>g", ":close<CR>", { silent = true, nowait = true, noremap = true })
 
-    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-    api.nvim_buf_set_option(buf, 'bufhidden', 'delete')
-    api.nvim_buf_set_option(buf, 'modifiable', false)
+    api.nvim_buf_set_option(buf, "buftype", "nofile")
+    api.nvim_buf_set_option(buf, "bufhidden", "delete")
+    api.nvim_buf_set_option(buf, "modifiable", false)
 end
 
 function M.rest()
     if M.is_rest then
-        vim.cmd('tabclose')
+        vim.cmd("tabclose")
 
         M.is_rest = false
     else
-        vim.cmd('tabedit new')
-        vim.bo.bufhidden = 'wipe'
+        vim.cmd("tabedit new")
+        vim.bo.bufhidden = "wipe"
 
         local valid_win = M.win_rest and api.nvim_win_is_valid(M.win_rest)
         local window = valid_win and M.win_rest or api.nvim_get_current_win()
@@ -119,11 +129,11 @@ function M.rest()
         local valid_buf = M.buf_rest and api.nvim_buf_is_valid(M.buf_rest)
         local buf = valid_buf and M.buf_rest or api.nvim_create_buf(false, false)
 
-        api.nvim_buf_set_name(buf, 'test.http')
+        api.nvim_buf_set_name(buf, "test.http")
 
-        api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-        api.nvim_buf_set_option(buf, 'bufhidden', 'delete')
-        api.nvim_buf_set_option(buf, 'filetype', 'http')
+        api.nvim_buf_set_option(buf, "buftype", "nofile")
+        api.nvim_buf_set_option(buf, "bufhidden", "delete")
+        api.nvim_buf_set_option(buf, "filetype", "http")
 
         api.nvim_set_current_buf(buf)
         api.nvim_win_set_buf(window, buf)
@@ -135,37 +145,40 @@ function M.rest()
 end
 
 M.map_filetype_filename = {
-    cmake = 'CMakeLists.txt',
-    cpp = '*.cpp,*.hpp',
-    css = '*.css',
-    dart = '*.dart',
-    dockerfile = 'Dockerfile',
-    go = '*.go',
-    html = '*.html',
-    java = '*.java',
-    javascript = '*.js',
-    javascriptreact = '*.jsx',
-    json = '*.json',
-    lua = '*.lua',
-    markdown = '*.md',
-    php = '*.php',
-    python = '*.py',
-    rust = '*.rs',
-    solidity = '*.sol',
-    svelte = '*.svelte',
-    tex = '*.tex',
-    typescript = '*.ts',
-    typescriptreact = '*.tsx',
-    xml = '*.xml',
-    yaml = '*.yaml,*.yml',
+    sh = "*.sh,*.zsh",
+    cmake = "CMakeLists.txt",
+    css = "*.css",
+    cpp = "*.cpp,*.hpp",
+    dart = "*.dart",
+    dockerfile = "Dockerfile",
+    elixir = "*.ex",
+    go = "*.go",
+    haskell = "*.hs",
+    html = "*.html",
+    java = "*.java",
+    javascript = "*.js",
+    javascriptreact = "*.jsx",
+    json = "*.json",
+    lua = "*.lua",
+    markdown = "*.md",
+    php = "*.php",
+    python = "*.py",
+    rust = "*.rs",
+    solidity = "*.sol",
+    svelte = "*.svelte",
+    tex = "*.tex",
+    typescript = "*.ts",
+    typescriptreact = "*.tsx",
+    xml = "*.xml",
+    yaml = "*.yaml,*.yml",
 }
 
-function M.autocomment_by_filetypes(setting_filetypes, events, command)
-    local autocmd = 'autocmd ' .. events .. ' '
+function M.autocommand_by_filetypes(setting_filetypes, events, command)
+    local autocmd = "autocmd " .. events .. " "
     local i = 1
     for _, filetype in pairs(setting_filetypes) do
         if i > 1 then
-            autocmd = autocmd .. ','
+            autocmd = autocmd .. ","
         end
 
         autocmd = autocmd .. M.map_filetype_filename[filetype]
@@ -173,59 +186,13 @@ function M.autocomment_by_filetypes(setting_filetypes, events, command)
         i = i + 1
     end
 
-    autocmd = autocmd .. ' ' .. command
+    autocmd = autocmd .. " " .. command
 
     cmd(autocmd)
 end
 
 local function cmd_option(callback)
     return { noremap = true, silent = true, callback = callback }
-end
-
-function M.rename_popup()
-    local current_name = api.nvim_eval('expand("<cword>")')
-
-    local width = 50
-    local buf = api.nvim_create_buf(false, true)
-    local opts = {
-        relative = 'cursor',
-        width = width,
-        height = 1,
-        col = 0,
-        row = 1,
-        anchor = 'NW',
-        border = 'single',
-        style = 'minimal',
-    }
-
-    local win_handle = api.nvim_open_win(buf, 1, opts)
-
-    local texts = { current_name }
-    api.nvim_buf_set_lines(buf, 0, 1, false, texts)
-
-    api.nvim_buf_set_keymap(buf, 'n', 'q', ':close<CR>', { silent = true, nowait = true, noremap = true })
-    api.nvim_buf_set_keymap(
-        buf,
-        'i',
-        '<CR>',
-        '',
-        cmd_option(function()
-            local name = api.nvim_buf_get_lines(buf, 0, 1, false)[1]
-            api.nvim_win_close(win_handle, true)
-
-            if name ~= '' then
-                vim.lsp.buf.rename(name)
-            end
-
-            local keys = vim.api.nvim_replace_termcodes('<ESC>l', true, false, true)
-            api.nvim_feedkeys(keys, 'i', true)
-        end)
-    )
-
-    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-    api.nvim_buf_set_option(buf, 'bufhidden', 'delete')
-
-    api.nvim_feedkeys('A', 'n', true)
 end
 
 function M.rename_popup()
@@ -251,39 +218,39 @@ function M.rename_popup()
 
     api.nvim_buf_set_keymap(buf, "n", "q", ":close<CR>", { silent = true, nowait = true, noremap = true })
     api.nvim_buf_set_keymap(
-    buf,
-    "i",
-    "<CR>",
-    "",
-    cmd_option(function()
-        local name = api.nvim_buf_get_lines(buf, 0, 1, false)[1]
-        api.nvim_win_close(win_handle, true)
+        buf,
+        "i",
+        "<CR>",
+        "",
+        cmd_option(function()
+            local name = api.nvim_buf_get_lines(buf, 0, 1, false)[1]
+            api.nvim_win_close(win_handle, true)
 
-        if name ~= "" then
-            vim.lsp.buf.rename(name)
-        end
+            if name ~= "" then
+                vim.lsp.buf.rename(name)
+            end
 
-        local keys = vim.api.nvim_replace_termcodes("<ESC>l", true, false, true)
-        api.nvim_feedkeys(keys, "i", true)
-    end)
+            local keys = vim.api.nvim_replace_termcodes("<ESC>l", true, false, true)
+            api.nvim_feedkeys(keys, "i", true)
+        end)
     )
 
     api.nvim_buf_set_keymap(
-    buf,
-    "n",
-    "<CR>",
-    "",
-    cmd_option(function()
-        local name = api.nvim_buf_get_lines(buf, 0, 1, false)[1]
-        api.nvim_win_close(win_handle, true)
+        buf,
+        "n",
+        "<CR>",
+        "",
+        cmd_option(function()
+            local name = api.nvim_buf_get_lines(buf, 0, 1, false)[1]
+            api.nvim_win_close(win_handle, true)
 
-        if name ~= "" then
-            vim.lsp.buf.rename(name)
-        end
+            if name ~= "" then
+                vim.lsp.buf.rename(name)
+            end
 
-        local keys = vim.api.nvim_replace_termcodes("l", true, false, true)
-        api.nvim_feedkeys(keys, "i", true)
-    end)
+            local keys = vim.api.nvim_replace_termcodes("l", true, false, true)
+            api.nvim_feedkeys(keys, "i", true)
+        end)
     )
 
     api.nvim_buf_set_option(buf, "buftype", "nofile")
@@ -294,14 +261,20 @@ function M.rename_popup()
 end
 
 function M.toggle_test()
-    local current_test = api.nvim_eval('ultest#status()')
-    if current_test['tests'] > 0 then
-        if current_test['passed'] > 0 or current_test['failed'] > 0 or current_test['running'] > 0 then
-            vim.api.nvim_command('UltestClear')
+    local current_test = api.nvim_eval("ultest#status()")
+    if current_test["tests"] > 0 then
+        if current_test["passed"] > 0 or current_test["failed"] > 0 or current_test["running"] > 0 then
+            vim.api.nvim_command("UltestClear")
         else
-            vim.api.nvim_command('UltestNearest')
+            vim.api.nvim_command("UltestNearest")
         end
     end
+end
+
+function M.cover_score()
+    local score_raw = vim.api.nvim_exec('!go test -cover | sed -n 2p | cut -d " " -f 2 | tr -d "\\n"', true)
+    local newline_position = string.find(score_raw, "\n")
+    print(string.sub(score_raw, newline_position))
 end
 
 function M.project_files()

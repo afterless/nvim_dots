@@ -6,7 +6,7 @@ local setting_lanuages = require('languages.languages')
 local filetypes = settings.efm.filetypes
 local languages = {}
 
-for _, filetype in pairs(filetypes) do
+for _, filetype in ipairs(filetypes) do
     languages[filetype] = setting_lanuages[filetype].efm
 end
 
