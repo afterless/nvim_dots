@@ -16,5 +16,4 @@ end
 for _, feature in pairs(features) do
     local lsp = setting_lsps[feature]
     lspconfig[lsp.lsp_server].setup(lsp.lsp)
-    print(feature)
 end
